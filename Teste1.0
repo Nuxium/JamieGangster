@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Gangster</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #222; 
+            color: white;
+            background-image: url('https://www.noelshack.com/2025-10-4-1741251514-75f5c3d2-11f9-46ce-ab15-360e207b18e5.jpeg'); 
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+        }
+        #game-container { 
+            margin-top: 20px; 
+            background: rgba(0, 0, 0, 0.7); 
+            padding: 20px; 
+            border-radius: 10px; 
+            display: inline-block; 
+        }
+        .button-container { 
+            margin-top: 20px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+        .icon-button { 
+            background: #444; 
+            color: white; 
+            border: none; 
+            padding: 10px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        .icon-button:hover { 
+            background: #555; 
+        }
+        #rank-progress-bar { 
+            width: 100%; 
+            background-color: #555; 
+            border-radius: 5px; 
+            margin-top: 10px; 
+            position: relative; 
+        }
+        #rank-progress-fill { 
+            height: 20px; 
+            width: 0%; 
+            background-color: green; 
+            border-radius: 5px; 
+        }
+        #rank-progress-text { 
+            position: absolute; 
+            width: 100%; 
+            text-align: center; 
+            color: white; 
+            top: 0; 
+            font-weight: bold; 
+        }
+        #game-log { 
+            margin-top: 20px; 
+            color: #ff6347; 
+            font-size: 16px; 
+            white-space: pre-wrap; 
+            max-height: 150px; 
+            overflow-y: auto; 
+            background: #444; 
+            padding: 10px; 
+            border-radius: 10px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Idle Gangster</h1>
+    <p>Monte les rangs et deviens le parrain du crime !</p>
+    <div id="game-container">
+        <p>Argent: <span id="money">100</span> $</p>
+        <p>Rang: <span id="rank">1</span></p>
+        <p>Progression du rang: <span id="rank-progress">0%</span></p>
+        <div id="rank-progress-bar">
+            <div id="rank-progress-fill"></div>
+            <div id="rank-progress-text">0%</div>
+        </div>
+        <p id="prison-timer"></p>
+        <div class="button-container">
+            <button class="icon-button" onclick="attemptCrime()" id="crime-button">Faire un crime</button>
+            <button class="icon-button" onclick="attemptCarTheft()" id="car-theft-button">Voler une voiture</button>
+        </div>
+    </div>
+
+    <div id="game-log"></div>
+
+    <script>
+        let money = 100;
+        let rank = 1;
+        let rankProgress = 0;
+        let prisonTime = 0;
+        let lastCrimeTime = 0;
+        let lastCarTheftTime = 0;
+        let crimeCooldown = 60000; // 1 minute en millisecondes
+        let carTheftCooldown = 300000; // 5 minutes en millisecondes
+        let crimeCooldownRemaining = 0;
+        let carTheftCooldownRemaining = 0;
+        let rankProgressionRates = [3, 2, 1, 1, 1]; // Progression plus lente à chaque rang
+
+        function updateUI() {
+            document.getElementById("money").textContent = money;
+            document.getElementById("rank").textContent = rank;
+            document.getElementById("rank-progress").textContent = rankProgress + "%";
+            document.getElementById("rank-progress-fill").style.width = rankProgress + "%";
+            document.getElementById("rank-progress-text").textContent = rankProgress + "%";
+            if (crimeCooldownRemaining > 0) {
+                document.getElementById("crime-button").textContent = `Faire un crime (${formatTime(crimeCooldownRemaining)})`;
+            } else {
+                document.getElementById("crime-button").textContent = "Faire un crime";
+            }
+            if (carTheftCooldownRemaining > 0) {
+                document.getElementById("car-theft-button").textContent = `Voler une voiture (${formatTime(carTheftCooldownRemaining)})`;
+            } else {
+                document.getElementById("car-theft-button").textContent = "Voler une voiture";
+            }
+        }
+
+        function formatTime(timeInMillis) {
+            if (timeInMillis <= 0) return "";
+            let minutes = Math.floor(timeInMillis / 60000);
+            let seconds = Math.floor((timeInMillis % 60000) / 1000);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function attemptCrime() {
+            if (prisonTime > 0) {
+                showMessage("Tu es en prison, tu ne peux rien faire pour l'instant !");
+                return;
+            }
+            if (crimeCooldownRemaining > 0) {
+                showMessage("Tu dois attendre avant de pouvoir refaire un crime !");
+                return;
+            }
+            lastCrimeTime = Date.now();
+            crimeCooldownRemaining = crimeCooldown;
+            if (Math.random() * 100 < 10) {
+                money += 50;
+                showMessage("Crime réussi ! Tu as gagné 50 $.");
+            } else {
+                showMessage("Échec du crime ! Les flics t'ont chopé, tu vas en prison.");
+                goToPrison('crime');
+            }
+            let progressIncrease = rankProgressionRates[rank - 1];
+            rankProgress += progressIncrease;
+            if (rankProgress >= 100) {
+                rank++;
+                rankProgress = 0;
+                showMessage("Tu as monté de rang ! Rang " + rank);
+            }
+            updateUI();
+        }
+
+        function attemptCarTheft() {
+            if (prisonTime > 0) {
+                showMessage("Tu es en prison, tu ne peux rien faire pour l'instant !");
+                return;
+            }
+            if (carTheftCooldownRemaining > 0) {
+                showMessage("Tu dois attendre avant de pouvoir refaire un vol de voiture !");
+                return;
+            }
+            lastCarTheftTime = Date.now();
+            carTheftCooldownRemaining = carTheftCooldown;
+            if (Math.random() * 100 < 15) {
+                money += 100;
+                showMessage("Vol de voiture réussi ! Tu as gagné 100 $.");
+            } else {
+                showMessage("Échec du vol ! Les flics t'ont chopé, tu vas en prison.");
+                goToPrison('carTheft');
+            }
+            let progressIncrease = rankProgressionRates[rank - 1];
+            rankProgress += progressIncrease;
+            if (rankProgress >= 100) {
+                rank++;
+                rankProgress = 0;
+                showMessage("Tu as monté de rang ! Rang " + rank);
+            }
+            updateUI();
+        }
+
+        function showMessage(message) {
+            const log = document.getElementById("game-log");
+            log.textContent += message + "\n";
+            log.scrollTop = log.scrollHeight; // Scroll vers le bas
+        }
+
+        function goToPrison(action) {
+            let timeInPrison = 5 + (rank - 1) * 5;
+            prisonTime = timeInPrison;
+            document.getElementById("prison-timer").textContent = `Les flics t'ont chopé ! Prison: ${prisonTime}s`;
+            document.getElementById("prison-timer").style.display = "block";
+            let prisonInterval = setInterval(() => {
+                prisonTime--;
+                document.getElementById("prison-timer").textContent = `Les flics t'ont chopé ! Prison: ${prisonTime}s`;
+                if (prisonTime <= 0) {
+                    clearInterval(prisonInterval);
+                    document.getElementById("prison-timer").style.display = "none";
+                }
+            }, 1000);
+            // Ajout de 5 secondes pour chaque échec après le premier
+            if (action === 'crime') {
+                crimeCooldownRemaining += 5000;
+            } else if (action === 'carTheft') {
+                carTheftCooldownRemaining += 5000;
+            }
+        }
+
+        updateUI();
+        setInterval(updateUI, 1000);
+    </script>
+</body>
+</html>
