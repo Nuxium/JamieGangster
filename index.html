@@ -9,7 +9,8 @@
             font-family: Arial, sans-serif;
             text-align: center;
             background: url('https://github.com/Nuxium/JamieGangster/raw/main/75F5C3D2-11F9-46CE-AB15-360E207B18E5.jpeg') no-repeat center center fixed;
-            background-size: cover;
+            background-size: contain; /* Ajuste l'image pour qu'elle soit entièrement visible */
+            background-position: center;
             color: white;
         }
         #game-container {
@@ -69,6 +70,7 @@
     <h1>Idle Gangster</h1>
     <p>Monte les rangs et deviens le parrain du crime !</p>
     <div id="status-menu">
+        <p>Statut: <span id="status">Actif</span></p>
         <p>Argent: <span id="money">100</span> $</p>
         <p>Rang: <span id="rank">1</span></p>
         <p>Progression du rang: <span id="rank-progress">0%</span></p>
