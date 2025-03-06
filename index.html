@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Idle Gangster</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Jamie Gangster - Deviendras-tu le prochain Bok ?</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: url('https://github.com/Nuxium/JamieGangster/raw/main/75F5C3D2-11F9-46CE-AB15-360E207B18E5.jpeg') no-repeat center center fixed;
-            background-size: contain;
-            background-position: center;
+            background: url('https://www.noelshack.com/2025-10-4-1741251514-75f5c3d2-11f9-46ce-ab15-360e207b18e5.jpeg') no-repeat center center fixed;
+            background-size: cover;
             color: white;
         }
         #game-container {
@@ -64,13 +64,16 @@
             margin-top: 10px;
             color: red;
         }
+        .submenu {
+            display: none;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Idle Gangster</h1>
+    <h1>Jamie Gangster</h1>
     <p>Monte les rangs et deviens le parrain du crime !</p>
     <div id="status-menu">
-        <p>Statut: <span id="status">Actif</span></p>
         <p>Argent: <span id="money">100</span> $</p>
         <p>Rang: <span id="rank">1</span></p>
         <p>Progression du rang: <span id="rank-progress">0%</span></p>
@@ -84,9 +87,24 @@
     <div id="game-container">
         <p id="prison-timer"></p>
         <div class="button-container">
-            <button class="icon-button" onclick="attemptCrime(50)" id="crime-btn">Faire un crime<span class="cooldown-timer" id="crime-timer-btn"></span></button>
-            <button class="icon-button" onclick="attemptCarTheft(30)" id="theft-btn">Voler une voiture<span class="cooldown-timer" id="theft-timer-btn"></span></button>
+            <button class="icon-button" id="crime-button" onclick="toggleCrimeMenu()">Crimes</button>
+            <button class="icon-button" id="theft-button" onclick="toggleTheftMenu()">Vol de voiture</button>
         </div>
+
+        <div id="crime-menu" class="submenu">
+            <button class="icon-button" onclick="attemptCrime(50, 'Voler une montre')">Voler une montre (50%)</button>
+            <button class="icon-button" onclick="attemptCrime(40, 'Casser une vitrine')">Casser une vitrine (40%)</button>
+            <button class="icon-button" onclick="attemptCrime(30, 'Braquage de bijouterie')">Braquage de bijouterie (30%)</button>
+            <button class="icon-button" onclick="attemptCrime(20, 'Vol dans un coffre fort')">Vol dans un coffre fort (20%)</button>
+        </div>
+
+        <div id="theft-menu" class="submenu">
+            <button class="icon-button" onclick="attemptCarTheft(60, 'Ford Model 18')">Voler une Ford Model 18 (60%)</button>
+            <button class="icon-button" onclick="attemptCarTheft(50, 'Chevrolet Fleetmaster')">Voler une Chevrolet Fleetmaster (50%)</button>
+            <button class="icon-button" onclick="attemptCarTheft(40, 'Chrysler New Yorker')">Voler une Chrysler New Yorker (40%)</button>
+            <button class="icon-button" onclick="attemptCarTheft(30, 'Oldsmobile Series 60')">Voler une Oldsmobile Series 60 (30%)</button>
+        </div>
+
         <p id="result-message"></p>
     </div>
     <script>
@@ -109,22 +127,41 @@
             document.getElementById("successful-thefts").textContent = successfulThefts;
             document.getElementById("total-crimes").textContent = totalCrimes;
             document.getElementById("total-thefts").textContent = totalThefts;
-            if (prisonTime > 0) {
-                document.getElementById("prison-timer").textContent = `Prison: ${prisonTime}s`;
+        }
+
+        function toggleCrimeMenu() {
+            const crimeMenu = document.getElementById('crime-menu');
+            const theftMenu = document.getElementById('theft-menu');
+            if (crimeMenu.style.display === 'block') {
+                crimeMenu.style.display = 'none';
+            } else {
+                crimeMenu.style.display = 'block';
+                theftMenu.style.display = 'none';  // Ferme le menu vol de voiture si ouvert
             }
         }
 
-        function attemptCrime(successRate) {
+        function toggleTheftMenu() {
+            const theftMenu = document.getElementById('theft-menu');
+            const crimeMenu = document.getElementById('crime-menu');
+            if (theftMenu.style.display === 'block') {
+                theftMenu.style.display = 'none';
+            } else {
+                theftMenu.style.display = 'block';
+                crimeMenu.style.display = 'none';  // Ferme le menu crimes si ouvert
+            }
+        }
+
+        function attemptCrime(successRate, crimeType) {
             if (crimeCooldown > 0 || prisonTime > 0) return;
             totalCrimes++;
             if (Math.random() * 100 < successRate) {
                 money += 50;
                 rankProgress += 3;
                 successfulCrimes++;
-                document.getElementById("result-message").textContent = "Réussite du crime !";
+                document.getElementById("result-message").textContent = `Réussite du crime : ${crimeType}`;
             } else {
                 goToPrison();
-                document.getElementById("result-message").textContent = "Échec du crime !";
+                document.getElementById("result-message").textContent = `Échec du crime : ${crimeType}`;
                 rankProgress += 3;
             }
             if (rankProgress >= 100) {
@@ -136,17 +173,17 @@
             startCooldown("crime");
         }
 
-        function attemptCarTheft(successRate) {
+        function attemptCarTheft(successRate, carType) {
             if (theftCooldown > 0 || prisonTime > 0) return;
             totalThefts++;
             if (Math.random() * 100 < successRate) {
                 money += 100;
                 rankProgress += 3;
                 successfulThefts++;
-                document.getElementById("result-message").textContent = "Réussite du vol !";
+                document.getElementById("result-message").textContent = `Réussite du vol : ${carType}`;
             } else {
                 goToPrison();
-                document.getElementById("result-message").textContent = "Échec du vol !";
+                document.getElementById("result-message").textContent = `Échec du vol : ${carType}`;
                 rankProgress += 3;
             }
             if (rankProgress >= 100) {
@@ -159,28 +196,50 @@
         }
 
         function goToPrison() {
-            prisonTime += 30;
-            document.getElementById("prison-timer").textContent = `Prison: ${prisonTime}s`;
+            prisonTime = 30 + rank * 5;  // Durée de prison augmentée avec le rang
+            document.getElementById("prison-timer").textContent = `Temps en prison : ${prisonTime}s`;
+            startPrisonTimer();
+        }
+
+        function startPrisonTimer() {
+            let timerId = setInterval(() => {
+                if (prisonTime > 0) {
+                    prisonTime--;
+                    document.getElementById("prison-timer").textContent = `Temps en prison : ${prisonTime}s`;
+                } else {
+                    clearInterval(timerId);
+                    document.getElementById("prison-timer").textContent = '';
+                }
+            }, 1000);
         }
 
         function startCooldown(type) {
-            let cooldownInterval = setInterval(function() {
-                if (type === "crime" && crimeCooldown > 0) {
-                    crimeCooldown--;
-                    document.getElementById("crime-timer").textContent = `Crime: ${crimeCooldown}s`;
-                }
-                if (type === "theft" && theftCooldown > 0) {
-                    theftCooldown--;
-                    document.getElementById("theft-timer").textContent = `Vol: ${theftCooldown}s`;
-                }
-                if (prisonTime > 0) {
-                    prisonTime--;
-                    document.getElementById("prison-timer").textContent = `Prison: ${prisonTime}s`;
-                }
-                if (crimeCooldown <= 0 && theftCooldown <= 0 && prisonTime <= 0) {
-                    clearInterval(cooldownInterval);
-                }
-            }, 1000);
+            let timerId;
+            if (type === "crime") {
+                timerId = setInterval(() => {
+                    if (crimeCooldown > 0) {
+                        crimeCooldown--;
+                        document.getElementById("crime-timer").textContent = `Cooldown crime : ${crimeCooldown}s`;
+                        document.getElementById("crime-button").innerText = `Crimes (${crimeCooldown}s)`;
+                    } else {
+                        clearInterval(timerId);
+                        document.getElementById("crime-timer").textContent = '';
+                        document.getElementById("crime-button").innerText = "Crimes";
+                    }
+                }, 1000);
+            } else if (type === "theft") {
+                timerId = setInterval(() => {
+                    if (theftCooldown > 0) {
+                        theftCooldown--;
+                        document.getElementById("theft-timer").textContent = `Cooldown vol de voiture : ${theftCooldown}s`;
+                        document.getElementById("theft-button").innerText = `Vol de voiture (${theftCooldown}s)`;
+                    } else {
+                        clearInterval(timerId);
+                        document.getElementById("theft-timer").textContent = '';
+                        document.getElementById("theft-button").innerText = "Vol de voiture";
+                    }
+                }, 1000);
+            }
         }
 
         updateUI();
