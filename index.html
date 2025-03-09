@@ -51,10 +51,15 @@
             cursor: pointer;
             padding: 10px;
             transition: background 0.3s;
+            position: relative; /* Ajout pour positionner le timer */
+            overflow: hidden; /* Empêche le timer de dépasser */
+            display: flex; /* Ajout pour l'alignement */
+            align-items: center; /* Centre verticalement */
+            justify-content: center; /* Centre horizontalement */
         }
         .icon-button:hover { background: #ff0000; }
-        .icon-button:disabled { background: #555; }
-        
+        .icon-button:disabled { background: #555; cursor: not-allowed; }
+
         #crime-section, #contraband-section, #car-theft-section {
             margin-top: 20px;
             display: none;
@@ -107,12 +112,28 @@
         .error { color: red; }
         .success { color: lightgreen; }
         .cooldown {
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: bold;
             color: #ff9900;
-            margin-top: 5px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1; /* Assure que le timer est au-dessus du texte */
+        }
+        .cooldown::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Ajoute un fond sombre */
+            z-index: -1; /* Place le fond derrière le texte */
+            border-radius: 5px; /* Adapte la forme à celle du bouton */
         }
         h1 { text-shadow: 2px 2px 4px #000; }
-        
+
         /* Barre d'XP améliorée */
         .rank-progress-container {
             width: 100%;
@@ -200,24 +221,26 @@
             <p>Argent: <span id="argent">100</span>€</p>
             <p>Rang: <span id="rank">Outsider</span></p>
             <p id="rank-description">Nouveau venu, pas encore intégré dans l'organisation, mais cherchant à prouver sa valeur.</p>
-            
+
             <div class="rank-progress-container">
                 <div class="rank-progress-text"><span id="xp-current">0</span>/<span id="xp-next">100</span> XP</div>
                 <div class="rank-progress-bar" id="rank-progress"></div>
             </div>
             <span class="xp-label">Prochain rang: <span id="next-rank-name">Runner</span></span>
-            
+
             <p id="prison-timer" style="display: none;">En prison pendant encore: <span id="prison-time">0s</span></p>
-            <div id="cooldown-timers">
-                <p id="crime-timer" style="display: none;" class="cooldown">Cooldown Crimes: <span id="crime-cooldown">0s</span></p>
-                <p id="car-theft-timer" style="display: none;" class="cooldown">Cooldown Vol de voiture: <span id="car-theft-cooldown">0s</span></p>
-            </div>
         </div>
-        
+
         <div class="button-container">
-            <button class="icon-button" onclick="game.toggleSection('crime-section')">Crimes</button>
-            <button class="icon-button" onclick="game.toggleSection('car-theft-section')">Vol de voiture</button>
-            <button class="icon-button" onclick="game.toggleSection('contraband-section')">Contrebande</button>
+            <button class="icon-button" data-section="crime-section">
+                Crimes
+                <span class="cooldown" id="crime-cooldown-btn" style="display: none;"></span>
+            </button>
+            <button class="icon-button" data-section="car-theft-section">
+                Vol de voiture
+                 <span class="cooldown" id="car-theft-cooldown-btn" style="display: none;"></span>
+            </button>
+            <button class="icon-button" data-section="contraband-section">Contrebande</button>
         </div>
 
         <div id="message"></div>
@@ -246,7 +269,7 @@
                 <button class="icon-button" onclick="game.attemptCrime('attaques-de-convois', 0.3, 25)">Go</button>
             </div>
         </div>
-        
+
         <div id="car-theft-section" class="crime-container">
             <h3>Vol de voiture</h3>
             <div class="crime-card">
@@ -324,7 +347,7 @@
             carTheftCooldown: 0,
             contraband: { Vin: 0, Cognac: 0, Cocaine: 0 },
             totalTransactions: 0,
-            
+
             // Navigation entre sections
             toggleSection: function(sectionId) {
                 const sections = ["crime-section", "contraband-section", "car-theft-section"];
@@ -337,19 +360,19 @@
                     }
                 });
             },
-            
+
             // Activités criminelles
             attemptCrime: function(crime, chance, xp) {
                 if (this.prisonTime > 0) {
                     this.showMessage("Vous êtes en prison, vous ne pouvez pas commettre de crime.", true);
                     return;
                 }
-                
+
                 if (this.crimeCooldown > 0) {
                     this.showMessage(`Tu dois attendre encore ${this.crimeCooldown} secondes avant de commettre un nouveau crime.`, true);
                     return;
                 }
-                
+
                 const successChance = chance * (1 + (this.rankLevel * 0.05));
                 if (Math.random() > successChance) {
                     this.prisonTime = 30;
@@ -362,16 +385,16 @@
                         'braquages-de-commerces': 200,
                         'attaques-de-convois': 300
                     }[crime] || 0;
-                    
+
                     this.argent += reward;
                     this.addXP(xp);
                     this.showMessage(`${crime} réussi ! Vous avez gagné ${reward}€ et ${xp} XP.`, false, true);
                 }
-                
+
                 // Ajouter le cooldown
                 this.crimeCooldown = 60; // 60 secondes de cooldown
                 this.crimeCooldownTimer();
-                
+
                 this.updateUI();
                 this.saveGame();
             },
@@ -381,12 +404,12 @@
                     this.showMessage("Vous êtes en prison, vous ne pouvez pas commettre de crime.", true);
                     return;
                 }
-                
+
                 if (this.carTheftCooldown > 0) {
                     this.showMessage(`Tu dois attendre encore ${this.carTheftCooldown} secondes avant de voler une autre voiture.`, true);
                     return;
                 }
-                
+
                 const successChance = chance * (1 + (this.rankLevel * 0.05));
                 if (Math.random() > successChance) {
                     this.prisonTime = 30;
@@ -399,27 +422,27 @@
                         'carjacking': 300,
                         'vol-sous-haute-sécurité': 500
                     }[crime] || 0;
-                    
+
                     this.argent += reward;
                     this.addXP(xp);
                     this.showMessage(`${crime} réussi ! Vous avez gagné ${reward}€ et ${xp} XP.`, false, true);
                 }
-                
+
                 // Ajouter le cooldown
                 this.carTheftCooldown = 300; // 300 secondes (5 minutes) de cooldown
                 this.carTheftCooldownTimer();
-                
+
                 this.updateUI();
                 this.saveGame();
             },
-            
+
             // Contrebande
             buyContraband: function(type, price, xp) {
                 if (this.prisonTime > 0) {
                     this.showMessage("Vous êtes en prison, vous ne pouvez pas faire de contrebande.", true);
                     return;
                 }
-                
+
                 const quantityInput = document.getElementById(`${type.toLowerCase()}-quantity`);
                 if (!quantityInput) return;
 
@@ -428,7 +451,7 @@
                     this.showMessage("Veuillez entrer une quantité valide.", true);
                     return;
                 }
-                
+
                 const totalCost = price * quantity;
 
                 if (this.argent >= totalCost) {
@@ -437,7 +460,7 @@
                     this.totalTransactions += 1;
                     this.addXP(xp * quantity);
                     this.showMessage(`Vous avez acheté ${quantity} ${type} et gagné ${xp * quantity} XP.`, false, true);
-                    
+
                     // Chance d'aller en prison avec contrebande
                     if (Math.random() < Math.min(this.totalTransactions * 0.01, 0.3)) {
                         this.prisonTime = 45;
@@ -447,7 +470,7 @@
                 } else {
                     this.showMessage(`Pas assez de fric pour acheter ce ${type}.`, true);
                 }
-                
+
                 this.updateUI();
                 this.saveGame();
             },
@@ -457,7 +480,7 @@
                     this.showMessage("Vous êtes en prison, vous ne pouvez pas faire de contrebande.", true);
                     return;
                 }
-                
+
                 const quantityInput = document.getElementById(`${type.toLowerCase()}-quantity`);
                 if (!quantityInput) return;
 
@@ -466,7 +489,7 @@
                     this.showMessage("Veuillez entrer une quantité valide.", true);
                     return;
                 }
-                
+
                 if ((this.contraband[type] || 0) >= quantity) {
                     const saleValue = price * quantity;
                     this.argent += saleValue;
@@ -474,7 +497,7 @@
                     this.totalTransactions += 1;
                     this.addXP(xp * quantity);
                     this.showMessage(`Vous avez vendu ${quantity} ${type} pour ${saleValue}€ et gagné ${xp * quantity} XP.`, false, true);
-                    
+
                     // Chance d'aller en prison avec contrebande
                     if (Math.random() < Math.min(this.totalTransactions * 0.01, 0.3)) {
                         this.prisonTime = 45;
@@ -484,36 +507,36 @@
                 } else {
                     this.showMessage(`Vous n'avez pas assez de ${type} à vendre.`, true);
                 }
-                
+
                 this.updateUI();
                 this.saveGame();
             },
-            
+
             // Progression de niveau
             addXP: function(amount) {
                 this.xp += amount;
-                
+
                 const nextRank = this.getNextRank();
                 if (nextRank && this.xp >= nextRank.xpRequired) {
                     this.rankLevel += 1;
                     document.getElementById("new-rank").textContent = nextRank.name;
                     document.getElementById("level-up").style.display = "block";
-                    setTimeout(() => { 
-                        document.getElementById("level-up").style.display = "none"; 
+                    setTimeout(() => {
+                        document.getElementById("level-up").style.display = "none";
                     }, 3000);
                 }
-                
+
                 this.updateUI();
                 this.saveGame();
             },
-            
+
             getNextRank: function() {
                 if (this.rankLevel < this.ranks.length - 1) {
                     return this.ranks[this.rankLevel + 1];
                 }
                 return null;
             },
-            
+
             // Interface utilisateur
             showMessage: function(text, isError = false, isSuccess = false) {
                 const messageElement = document.getElementById("message");
@@ -522,53 +545,67 @@
                 messageElement.className = "";
                 if (isError) messageElement.classList.add("error");
                 if (isSuccess) messageElement.classList.add("success");
-                
-                setTimeout(() => { 
-                    messageElement.style.display = "none"; 
+
+                setTimeout(() => {
+                    messageElement.style.display = "none";
                 }, 3000);
             },
-            
+
             // Timers
             prisonCountdown: function() {
                 if (this.prisonTime <= 0) {
                     document.getElementById("prison-timer").style.display = "none";
                     return;
                 }
-                
+
                 document.getElementById("prison-timer").style.display = "block";
                 document.getElementById("prison-time").textContent = `${this.prisonTime}s`;
-                
+
                 setTimeout(() => {
                     this.prisonTime -= 1;
                     this.prisonCountdown();
                     this.saveGame();
                 }, 1000);
             },
-            
-            crimeCooldownTimer: function() {
+
+           crimeCooldownTimer: function() {
+                const button = document.querySelector('[data-section="crime-section"]');
+                const cooldownSpan = document.getElementById("crime-cooldown-btn");
+
                 if (this.crimeCooldown <= 0) {
-                    document.getElementById("crime-timer").style.display = "none";
+                    cooldownSpan.style.display = "none";
+                    button.disabled = false;
+                    button.textContent = "Crimes"; // Rétablir le texte original
                     return;
                 }
-                
-                document.getElementById("crime-timer").style.display = "block";
-                document.getElementById("crime-cooldown").textContent = `${this.crimeCooldown}s`;
-                
+
+                cooldownSpan.style.display = "block";
+                cooldownSpan.textContent = `${this.crimeCooldown}s`;
+                button.disabled = true;
+                button.textContent = `Crimes (${this.crimeCooldown}s)`; // Texte avec le timer
+
                 setTimeout(() => {
                     this.crimeCooldown -= 1;
                     this.crimeCooldownTimer();
                 }, 1000);
             },
-            
+
             carTheftCooldownTimer: function() {
+                const button = document.querySelector('[data-section="car-theft-section"]');
+                const cooldownSpan = document.getElementById("car-theft-cooldown-btn");
+
                 if (this.carTheftCooldown <= 0) {
-                    document.getElementById("car-theft-timer").style.display = "none";
+                    cooldownSpan.style.display = "none";
+                    button.disabled = false;
+                     button.textContent = "Vol de voiture"; // Rétablir le texte original
                     return;
                 }
-                
-                document.getElementById("car-theft-timer").style.display = "block";
-                document.getElementById("car-theft-cooldown").textContent = `${this.carTheftCooldown}s`;
-                
+
+                cooldownSpan.style.display = "block";
+                cooldownSpan.textContent = `${this.carTheftCooldown}s`;
+                button.disabled = true;
+                 button.textContent = `Vol de voiture (${this.carTheftCooldown}s)`; // Texte avec le timer
+
                 setTimeout(() => {
                     this.carTheftCooldown -= 1;
                     this.carTheftCooldownTimer();
@@ -652,4 +689,40 @@
                 } catch (error) {
                     console.error("Erreur lors du chargement de la sauvegarde:", error);
                     // Réinitialiser en cas d'erreur
-                    this.argent = 100
+                    this.argent = 100;
+                    this.xp = 0;
+                    this.rankLevel = 0;
+                    this.prisonTime = 0;
+                    this.crimeCooldown = 0;
+                    this.carTheftCooldown = 0;
+                    this.contraband = { Vin: 0, Cognac: 0, Cocaine: 0 };
+                    this.totalTransactions = 0;
+                }
+
+                this.updateUI();
+                if (this.prisonTime > 0) this.prisonCountdown();
+                if (this.crimeCooldown > 0) this.crimeCooldownTimer();
+                if (this.carTheftCooldown > 0) this.carTheftCooldownTimer();
+            },
+
+            // Initialisation
+            init: function() {
+                this.loadGame();
+
+                // Ajout des event listeners pour les boutons de menu
+                document.querySelector('[data-section="crime-section"]').addEventListener('click', () => this.toggleSection('crime-section'));
+                document.querySelector('[data-section="car-theft-section"]').addEventListener('click', () => this.toggleSection('car-theft-section'));
+                document.querySelector('[data-section="contraband-section"]').addEventListener('click', () => this.toggleSection('contraband-section'));
+
+                // Sauvegarde automatique toutes les 30 secondes
+                setInterval(() => this.saveGame(), 30000);
+            }
+        };
+
+        // Initialiser le jeu
+        window.onload = function() {
+            game.init();
+        };
+    </script>
+</body>
+</html>
