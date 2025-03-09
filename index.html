@@ -1,122 +1,35 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Idle Gangster</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Exemple de Menu</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Style rapide pour l'exemple */
+    #menu {
+      transition: max-height 0.4s ease;
+      overflow: hidden;
+      max-height: 0;
+    }
+    #menu.visible {
+      max-height: 200px; /* Ajustez selon le contenu */
+    }
+  </style>
 </head>
 <body>
-    <div id="overlay">
-        <h1>Idle Gangster</h1>
-        <p>Gravis les rangs et deviens le plus grand gangster !</p>
-        <div id="stats">
-            <p>Argent: <span id="argent">100</span>€</p>
-            <p>Rang: <span id="rank">Outsider</span></p>
-            <p id="rank-description">Nouveau venu, pas encore intégré dans l'organisation, mais cherchant à prouver sa valeur.</p>
-            
-            <div class="rank-progress-container">
-                <div class="rank-progress-text"><span id="xp-current">0</span>/<span id="xp-next">100</span> XP</div>
-                <div class="rank-progress-bar" id="rank-progress"></div>
-            </div>
-            <span class="xp-label">Prochain rang: <span id="next-rank-name">Runner</span></span>
-            
-            <p id="prison-timer" style="display: none;">En prison pendant encore: <span id="prison-time">0s</span></p>
-            <div id="cooldown-timers">
-                <p id="crime-timer" style="display: none;" class="cooldown">Cooldown Crimes: <span id="crime-cooldown">0s</span></p>
-                <p id="car-theft-timer" style="display: none;" class="cooldown">Cooldown Vol de voiture: <span id="car-theft-cooldown">0s</span></p>
-            </div>
-        </div>
-        
-        <div class="button-container">
-            <button class="icon-button" onclick="game.toggleSection('crime-section')">Crimes</button>
-            <button class="icon-button" onclick="game.toggleSection('car-theft-section')">Vol de voiture</button>
-            <button class="icon-button" onclick="game.toggleSection('contraband-section')">Contrebande</button>
-        </div>
-
-        <div id="message"></div>
-        <div id="level-up" class="level-up-notification">NIVEAU SUPÉRIEUR!<br>Tu es maintenant <span id="new-rank"></span></div>
-
-        <div id="crime-section" class="crime-container">
-            <h3>Crimes</h3>
-            <div class="crime-card">
-                <h4>Petits larcins</h4>
-                <p>Réalisez des vols à l'étalage ou des cambriolages de petite envergure.</p>
-                <button class="icon-button" onclick="game.attemptCrime('petits-larcins', 0.8, 5)">Go</button>
-            </div>
-            <div class="crime-card">
-                <h4>Cambriolages de résidences</h4>
-                <p>Pénétrez par effraction dans des maisons pour dérober des objets de valeur.</p>
-                <button class="icon-button" onclick="game.attemptCrime('cambriolages-de-résidences', 0.6, 10)">Go</button>
-            </div>
-            <div class="crime-card">
-                <h4>Braquages de commerces</h4>
-                <p>Attaquez des magasins ou des stations-service pour obtenir de l'argent liquide.</p>
-                <button class="icon-button" onclick="game.attemptCrime('braquages-de-commerces', 0.4, 15)">Go</button>
-            </div>
-            <div class="crime-card">
-                <h4>Attaques de convois</h4>
-                <p>Interceptez des véhicules transportant des marchandises précieuses ou de l'argent.</p>
-                <button class="icon-button" onclick="game.attemptCrime('attaques-de-convois', 0.3, 25)">Go</button>
-            </div>
-        </div>
-        
-        <div id="car-theft-section" class="crime-container">
-            <h3>Vol de voiture</h3>
-            <div class="crime-card">
-                <h4>Vol express</h4>
-                <p>Tu repères une voiture mal garée avec la clé sur le contact. En un instant, tu démarres et disparais.</p>
-                <button class="icon-button" onclick="game.attemptCarTheft('vol-express', 0.8, 8)">Go</button>
-            </div>
-            <div class="crime-card">
-                <h4>Effraction discrète</h4>
-                <p>Avec un tournevis et un peu d'huile de coude, tu crochettes la serrure et démarres la voiture sans alerter personne.</p>
-                <button class="icon-button" onclick="game.attemptCarTheft('effraction-discrète', 0.6, 15)">Go</button>
-            </div>
-            <div class="crime-card">
-                <h4>Carjacking</h4>
-                <p>Tu attends que le conducteur sorte de sa voiture et, sous la menace, tu prends les commandes avant de t'enfuir.</p>
-                <button class="icon-button" onclick="game.attemptCarTheft('carjacking', 0.4, 25)">Go</button>
-            </div>
-            <div class="crime-card">
-                <h4>Vol sous haute sécurité</h4>
-                <p>Tu t'attaques à un véhicule de luxe équipé d'un système d'alarme et d'un tracker. Il va falloir être rapide et malin !</p>
-                <button class="icon-button" onclick="game.attemptCarTheft('vol-sous-haute-sécurité', 0.3, 40)">Go</button>
-            </div>
-        </div>
-
-        <div id="contraband-section">
-            <h3>Contrebande - Alcool et Drogue</h3>
-            <table>
-                <tr><th>Produit</th><th>Prix</th><th>Possédé</th><th>Quantité</th><th>Acheter</th><th>Vendre</th></tr>
-                <tr>
-                    <td>Vin</td>
-                    <td>30</td>
-                    <td id="vin-owned">0</td>
-                    <td><input type="number" id="vin-quantity" value="1" min="1"></td>
-                    <td><button class="icon-button" onclick="game.buyContraband('Vin', 30, 1)">Acheter</button></td>
-                    <td><button class="icon-button" onclick="game.sellContraband('Vin', 30, 2)">Vendre</button></td>
-                </tr>
-                <tr>
-                    <td>Cognac</td>
-                    <td>50</td>
-                    <td id="cognac-owned">0</td>
-                    <td><input type="number" id="cognac-quantity" value="1" min="1"></td>
-                    <td><button class="icon-button" onclick="game.buyContraband('Cognac', 50, 2)">Acheter</button></td>
-                    <td><button class="icon-button" onclick="game.sellContraband('Cognac', 50, 3)">Vendre</button></td>
-                </tr>
-                <tr>
-                    <td>Cocaine</td>
-                    <td>200</td>
-                    <td id="cocaine-owned">0</td>
-                    <td><input type="number" id="cocaine-quantity" value="1" min="1"></td>
-                    <td><button class="icon-button" onclick="game.buyContraband('Cocaine', 200, 4)">Acheter</button></td>
-                    <td><button class="icon-button" onclick="game.sellContraband('Cocaine', 200, 8)">Vendre</button></td>
-                </tr>
-            </table>
-        </div>
+  <nav>
+    <button id="menu-button">Menu</button>
+    <div id="menu">
+      <ul>
+        <li><a href="#home">Accueil</a></li>
+        <li><a href="#about">À propos</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
     </div>
+  </nav>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
+  <script src="main.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
