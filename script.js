@@ -25,7 +25,7 @@ const game = {
         sections.forEach(id => {
             const element = document.getElementById(id);
             if (id === sectionId) {
-                if (element.style.display === "block") {
+                if (element.style.display === "block" || element.style.display === "") {
                     element.style.display = "none";
                 } else {
                     element.style.display = "block";
@@ -99,4 +99,237 @@ const game = {
             }[crime] || 0;
             
             this.argent += reward;
-            this
+            this.addXP(xp);
+            this.showMessage(`${crime} réussi ! Vous avez gagné ${reward}€ et ${xp} XP.`);
+        }
+        
+        // Ajouter le cooldown
+        this.carTheftCooldown = 300; // 300 secondes (5 minutes) de cooldown
+        this.carTheftCooldownTimer();
+        
+        this.updateUI();
+        this.saveGame();
+    },
+    
+    // Contrebande
+    buyContraband: function(type, price, xp) {
+        if (this.prisonTime > 0) return;
+        
+        const quantityInput = document.getElementById(`${type.toLowerCase()}-quantity`);
+        if (!quantityInput) return;
+
+        const quantity = parseInt(quantityInput.value);
+        const totalCost = price * quantity;
+
+        if (this.argent >= totalCost) {
+            this.argent -= totalCost;
+            this.contraband[type] += quantity;
+            this.totalTransactions += 1;
+            this.addXP(xp * quantity);
+            this.showMessage(`Vous avez acheté ${quantity} ${type} et gagné ${xp * quantity} XP.`);
+            
+            // Chance d'aller en prison avec contrebande
+            if (Math.random() < Math.min(this.totalTransactions * 0.01, 0.3)) {
+                this.prisonTime = 45;
+                this.showMessage("Les flics ont repéré votre activité de contrebande ! Vous êtes en prison.");
+                this.prisonCountdown();
+            }
+        } else {
+            this.showMessage(`Pas assez de fric pour acheter ce ${type}.`, true);
+        }
+        
+        this.updateUI();
+        this.saveGame();
+    },
+
+    sellContraband: function(type, price, xp) {
+        if (this.prisonTime > 0) return;
+        
+        const quantityInput = document.getElementById(`${type.toLowerCase()}-quantity`);
+        if (!quantityInput) return;
+
+        const quantity = parseInt(quantityInput.value);
+        
+        if (this.contraband[type] >= quantity) {
+            const saleValue = price * quantity;
+            this.argent += saleValue;
+            this.contraband[type] -= quantity;
+            this.totalTransactions += 1;
+            this.addXP(xp * quantity);
+            this.showMessage(`Vous avez vendu ${quantity} ${type} pour ${saleValue}€ et gagné ${xp * quantity} XP.`);
+            
+            // Chance d'aller en prison avec contrebande
+            if (Math.random() < Math.min(this.totalTransactions * 0.01, 0.3)) {
+                this.prisonTime = 45;
+                this.showMessage("Les flics ont repéré votre activité de contrebande ! Vous êtes en prison.");
+                this.prisonCountdown();
+            }
+        } else {
+            this.showMessage(`Vous n'avez pas assez de ${type} à vendre.`, true);
+        }
+        
+        this.updateUI();
+        this.saveGame();
+    },
+    
+    // Progression de niveau
+    addXP: function(amount) {
+        this.xp += amount;
+        
+        const nextRank = this.getNextRank();
+        if (nextRank && this.xp >= nextRank.xpRequired) {
+            this.rankLevel += 1;
+            document.getElementById("new-rank").textContent = nextRank.name;
+            document.getElementById("level-up").style.display = "block";
+            setTimeout(() => { document.getElementById("level-up").style.display = "none"; }, 3000);
+        }
+        
+        this.updateUI();
+        this.saveGame();
+    },
+    
+    getNextRank: function() {
+        if (this.rankLevel < this.ranks.length - 1) {
+            return this.ranks[this.rankLevel + 1];
+        }
+        return null;
+    },
+    
+    // Interface utilisateur
+    showMessage: function(text, isError = false) {
+        const messageElement = document.getElementById("message");
+        messageElement.textContent = text;
+        messageElement.style.display = "block";
+        messageElement.className = isError ? "error" : "";
+        setTimeout(() => { messageElement.style.display = "none"; }, 3000);
+    },
+    
+    // Timers
+    prisonCountdown: function() {
+        if (this.prisonTime <= 0) {
+            document.getElementById("prison-timer").style.display = "none";
+            return;
+        }
+        
+        document.getElementById("prison-timer").style.display = "block";
+        document.getElementById("prison-time").textContent = `${this.prisonTime}s`;
+        
+        setTimeout(() => {
+            this.prisonTime -= 1;
+            this.prisonCountdown();
+        }, 1000);
+    },
+    
+    crimeCooldownTimer: function() {
+        if (this.crimeCooldown <= 0) {
+            document.getElementById("crime-timer").style.display = "none";
+            return;
+        }
+        
+        document.getElementById("crime-timer").style.display = "block";
+        document.getElementById("crime-cooldown").textContent = `${this.crimeCooldown}s`;
+        
+        setTimeout(() => {
+            this.crimeCooldown -= 1;
+            this.crimeCooldownTimer();
+        }, 1000);
+    },
+    
+    carTheftCooldownTimer: function() {
+        if (this.carTheftCooldown <= 0) {
+            document.getElementById("car-theft-timer").style.display = "none";
+            return;
+        }
+        
+        document.getElementById("car-theft-timer").style.display = "block";
+        document.getElementById("car-theft-cooldown").textContent = `${this.carTheftCooldown}s`;
+        
+        setTimeout(() => {
+            this.carTheftCooldown -= 1;
+            this.carTheftCooldownTimer();
+        }, 1000);
+    },
+    
+    // Mise à jour interface utilisateur
+    updateUI: function() {
+        // Money and rank
+        document.getElementById("argent").textContent = this.argent;
+        const currentRank = this.ranks[this.rankLevel];
+        document.getElementById("rank").textContent = currentRank.name;
+        document.getElementById("rank-description").textContent = currentRank.description;
+        
+        // XP progress bar
+        const nextRank = this.getNextRank();
+        if (nextRank) {
+            const currentXpRequired = currentRank.xpRequired;
+            const nextXpRequired = nextRank.xpRequired;
+            const xpForNextRank = nextXpRequired - currentXpRequired;
+            const xpProgress = this.xp - currentXpRequired;
+            const progressPercentage = Math.min(100, (xpProgress / xpForNextRank) * 100);
+            
+            document.getElementById("xp-current").textContent = this.xp;
+            document.getElementById("xp-next").textContent = nextXpRequired;
+            document.getElementById("rank-progress").style.width = `${progressPercentage}%`;
+            document.getElementById("next-rank-name").textContent = nextRank.name;
+        } else {
+            // Max rank reached
+            document.getElementById("xp-current").textContent = this.xp;
+            document.getElementById("xp-next").textContent = "MAX";
+            document.getElementById("rank-progress").style.width = "100%";
+            document.getElementById("next-rank-name").textContent = "MAX";
+        }
+        
+        // Contraband inventory
+        Object.keys(this.contraband).forEach(type => {
+            const element = document.getElementById(`${type.toLowerCase()}-owned`);
+            if (element) element.textContent = this.contraband[type];
+        });
+    },
+    
+    // Sauvegarde et chargement
+    saveGame: function() {
+        const saveData = {
+            argent: this.argent,
+            xp: this.xp,
+            rankLevel: this.rankLevel,
+            prisonTime: this.prisonTime,
+            crimeCooldown: this.crimeCooldown, 
+            carTheftCooldown: this.carTheftCooldown,
+            contraband: this.contraband,
+            totalTransactions: this.totalTransactions
+        };
+        localStorage.setItem('idleGangsterSave', JSON.stringify(saveData));
+    },
+    
+    loadGame: function() {
+        const saveData = localStorage.getItem('idleGangsterSave');
+        if (saveData) {
+            const data = JSON.parse(saveData);
+            this.argent = data.argent || 100;
+            this.xp = data.xp || 0;
+            this.rankLevel = data.rankLevel || 0;
+            this.prisonTime = data.prisonTime || 0;
+            this.crimeCooldown = data.crimeCooldown || 0;
+            this.carTheftCooldown = data.carTheftCooldown || 0;
+            this.contraband = data.contraband || { Vin: 0, Cognac: 0, Cocaine: 0 };
+            this.totalTransactions = data.totalTransactions || 0;
+        }
+        this.updateUI();
+        if (this.prisonTime > 0) this.prisonCountdown();
+        if (this.crimeCooldown > 0) this.crimeCooldownTimer();
+        if (this.carTheftCooldown > 0) this.carTheftCooldownTimer();
+    },
+    
+    // Initialisation
+    init: function() {
+        this.loadGame();
+        
+        // Sauvegarde automatique toutes les 30 secondes
+        setInterval(() => this.saveGame(), 30000);
+    }
+};
+
+// Initialiser le jeu
+window.onload = function() {
+    game.init();
+};
