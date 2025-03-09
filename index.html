@@ -103,4 +103,20 @@
                     <td id="cognac-owned">0</td>
                     <td><input type="number" id="cognac-quantity" value="1" min="1"></td>
                     <td><button class="icon-button" onclick="game.buyContraband('Cognac', 50, 2)">Acheter</button></td>
-                    <td><button class="icon-button" onclick="game.sellContr
+                    <td><button class="icon-button" onclick="game.sellContraband('Cognac', 50, 3)">Vendre</button></td>
+                </tr>
+                <tr>
+                    <td>Cocaine</td>
+                    <td>200</td>
+                    <td id="cocaine-owned">0</td>
+                    <td><input type="number" id="cocaine-quantity" value="1" min="1"></td>
+                    <td><button class="icon-button" onclick="game.buyContraband('Cocaine', 200, 4)">Acheter</button></td>
+                    <td><button class="icon-button" onclick="game.sellContraband('Cocaine', 200, 8)">Vendre</button></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
